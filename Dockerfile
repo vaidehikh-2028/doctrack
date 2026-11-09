@@ -9,7 +9,7 @@ RUN mvn -q -B package -DskipTests
 # ---- run ----
 FROM eclipse-temurin:17-jre
 WORKDIR /app
-RUN useradd --system --uid 10001 app
+RUN useradd --system --uid 10001 app && mkdir -p /app/data && chown -R app /app
 COPY --from=build /src/target/docreq-*.jar app.jar
 USER app
 EXPOSE 8080
