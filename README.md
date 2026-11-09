@@ -1,5 +1,7 @@
 # DocTrack: Student Document Request and Tracking System
 
+   [![CI](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml/badge.svg)](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml)
+
 A role-based web application for requesting, verifying, approving and delivering official student
 documents (Bonafide, Character Certificate, Transcript, ...) at LNMIIT. Students submit requests
 online and track them; document staff verify them; an approving authority approves or rejects
