@@ -1,14 +1,14 @@
 # DocTrack: Student Document Request and Tracking System
 
-   [![CI](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml/badge.svg)](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml)
+[![CI](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml/badge.svg)](https://github.com/vaidehikh-2028/doctrack/actions/workflows/ci.yml)
 
-    **Live demo:** https://doctrack-1.onrender.com (login: `student1`, `staff1`, `approver1` or `admin1`, password `Demo@1234`; the free server may take ~1 minute to wake up)
+**Live demo:** https://doctrack-1.onrender.com (login: `student1`, `staff1`, `approver1` or `admin1`, password `Demo@1234`; the free server may take ~1 minute to wake up)
 
-   | Request detail with history | Staff work queue |
-   |---|---|
-   | ![Request detail](detail.png) | ![Staff queue](queue.png) |
-   | **New request (student)** | **Reports** |
-   | ![New request](student.png) | ![Reports](reports.png) |
+| Request detail with history | Staff work queue |
+|---|---|
+| ![Request detail](detail.png) | ![Staff queue](queue.png) |
+| **New request (student)** | **Reports** |
+| ![New request](student.png) | ![Reports](reports.png) |
 
 A role-based web application for requesting, verifying, approving and delivering official student
 documents (Bonafide, Character Certificate, Transcript, ...) at LNMIIT. Students submit requests
