@@ -1,0 +1,53 @@
+# Default profile: local development with an H2 file database and local file storage.
+spring:
+  application:
+    name: docreq
+  datasource:
+    url: jdbc:h2:file:./data/docreq;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  servlet:
+    multipart:
+      # Above the 5 MB business limit so the validator, not the servlet, gives the precise message.
+      max-file-size: 6MB
+      max-request-size: 7MB
+
+server:
+  port: 8080
+  error:
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  jwt:
+    # Development key only. Production reads APP_JWT_SECRET (base64, at least 32 bytes).
+    secret: ${APP_JWT_SECRET:ZGV2LW9ubHktc2VjcmV0LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uLTMyYnl0ZXMhIQ==}
+    ttl: PT2H
+  storage:
+    type: local
+    local-root: ./data/files
+  notifications:
+    dispatch-interval: PT15S
+    max-attempts: 5
+    base-backoff: PT30S
+  sla:
+    threshold: PT48H
+    cron: "0 0 * * * *"
+  seed:
+    enabled: true
+    demo-password: Demo@1234
+  scheduling:
+    enabled: true

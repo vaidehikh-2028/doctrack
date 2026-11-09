@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:docreq-${random.uuid};MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  storage:
+    type: local
+    local-root: ${java.io.tmpdir}/docreq-test-files
+  scheduling:
+    enabled: false      # tests call the jobs directly with a chosen time
+  seed:
+    enabled: true
+  notifications:
+    base-backoff: PT30S
+    max-attempts: 3
