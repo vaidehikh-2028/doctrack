@@ -155,7 +155,9 @@ describe('DocTrack UI against the real API', () => {
     s = await loginAs('student1');
     expect(await screen.findByText(/needs? more information from you/i)).toBeInTheDocument();
     await openRequest(s.user, no);
-    expect(screen.getByText(/missing information:/i).closest('.alert')).toHaveTextContent(/attach your fee receipt/i);
+    // The label appears in the warning banner and, from the backend, in the history remark.
+    const banner = screen.getAllByText(/missing information:/i).map((el) => el.closest('.alert')).find(Boolean);
+    expect(banner).toHaveTextContent(/attach your fee receipt/i);
     const purpose = screen.getByLabelText(/purpose/i);
     await s.user.clear(purpose);
     await s.user.type(purpose, 'Internship application, fee receipt attached');
