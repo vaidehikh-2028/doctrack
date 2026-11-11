@@ -231,7 +231,10 @@ awk -F'\t' '
 
 awk -F'\t' '{ print $3 }' "$TMP/req" | sort | uniq -c | sort -k2,2n >"$TMP/status"
 sort "$TMP/exc" | uniq -c | sort -k1,1nr -k2,2 >"$TMP/exceptions"
-sort -t$'\t' -k2,2nr "$TMP/req" | head -n "$TOP" >"$TMP/slowest"
+# Not "sort | head": head exits after TOP lines, sort then dies of SIGPIPE on large logs, and
+# pipefail turns that into a script failure. Sort to a file, then take the top rows.
+sort -t$'\t' -k2,2nr "$TMP/req" >"$TMP/slowest.all"
+head -n "$TOP" "$TMP/slowest.all" >"$TMP/slowest"
 
 # ---------------------------------------------------------------- output
 # table TITLE HEADER(tab-separated) FILE: prints the first TOP rows as aligned text or Markdown.

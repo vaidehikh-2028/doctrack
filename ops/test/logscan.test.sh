@@ -70,6 +70,13 @@ out=$(run "$WORK/empty.log")
 assert_exit "handles an empty log" $? 0
 assert_has "empty log reports zero requests" "$out" 'requests 0 \| 4xx 0 \(0\.00%\)'
 
+awk 'BEGIN { for (i = 0; i < 200000; i++)
+  printf "2026-11-11 09:%02d:%02d.000 \"GET /api/requests/REQ-2026-%06d HTTP/1.1\" 200 512 %d\n", int(i / 60) % 60, i % 60, i % 500, i % 997 }' >"$WORK/big.log"
+out=$(run "$WORK/big.log")
+assert_exit "large logs: no SIGPIPE from sort | head (regression)" $? 0
+assert_has "large logs: counts every request" "$out" 'requests 200000 \|'
+assert_has "large logs: exact p95 over 200k samples" "$out" 'GET /api/requests/\{requestNumber\} +200000 +497\.4 +497 +946 +996'
+
 echo "output options"
 out=$(run --markdown "$FX/access.log" "$FX/app.log")
 assert_has "Markdown header" "$out" '^### DocTrack log report'
