@@ -47,6 +47,13 @@ jobs:
         env:
           DOCTRACK_E2E_URL: http://localhost:8080
 
+      # ---- load test: throughput and latency of the hot read paths, reported in the job summary ----
+      - name: API load test
+        working-directory: loadtest
+        run: npm ci --no-audit --no-fund && node run.mjs
+        env:
+          DOCTRACK_URL: http://localhost:8080
+
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v4
