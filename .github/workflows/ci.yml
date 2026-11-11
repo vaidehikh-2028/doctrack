@@ -61,11 +61,11 @@ jobs:
         env:
           DOCTRACK_URL: http://localhost:8080
 
-      # ---- log triage over everything above; fails the build on any 5xx ----
+      # ---- log triage over everything above; fails on any 5xx or unexpected ERROR ----
       - name: Log report
         run: |
           ops/logscan.sh logs/access*.log logs/docreq.log
-          ops/logscan.sh --markdown --max-5xx-rate 0 logs/access*.log logs/docreq.log >> "$GITHUB_STEP_SUMMARY"
+          ops/logscan.sh --markdown --max-5xx-rate 0 --max-errors 0 logs/access*.log logs/docreq.log >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload test and coverage reports
         if: always()

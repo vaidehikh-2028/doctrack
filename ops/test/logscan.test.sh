@@ -98,6 +98,12 @@ assert_has "names the slow endpoint" "$out" 'ALERT: POST /api/auth/login p95 180
 run --max-p95-ms 100 --min-samples 50 "$FX/access.log" >/dev/null
 assert_exit "endpoints below --min-samples are not judged" $? 0
 
+out=$(run --max-errors 0 "$FX/app.log")
+assert_exit "ERROR lines above --max-errors exit 2" $? 2
+assert_has "explains the error alert" "$out" 'ALERT: 1 ERROR lines in the application log \(limit 0\)'
+run --max-errors 1 "$FX/app.log" >/dev/null
+assert_exit "ERROR lines within --max-errors pass" $? 0
+
 echo "argument handling"
 run --top abc >/dev/null
 assert_exit "rejects a non-numeric --top" $? 64

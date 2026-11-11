@@ -24,6 +24,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.util.DisconnectedClientHelper;
 
 import java.time.Instant;
 import java.util.List;
@@ -88,6 +89,12 @@ public class GlobalExceptionHandler {
             ErrorCode code = er.getStatusCode().value() == 404 ? ErrorCode.GEN_NOT_FOUND : ErrorCode.GEN_BAD_INPUT;
             return logged(ResponseEntity.status(er.getStatusCode())
                     .body(new ApiError(code.code(), code.defaultMessage(), List.of(), Instant.now())));
+        }
+        if (DisconnectedClientHelper.isClientDisconnectedException(e)) {
+            // The client closed the connection mid-response (tab closed, load generator stopped).
+            // Nothing failed on our side and there is no one to answer, so this is not an E-SYS-500.
+            log.debug("client disconnected during {}: {}", where(), e.getMessage());
+            return null;
         }
         log.error("E-SYS-500 500 {} {} unexpected error", where(), user(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

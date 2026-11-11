@@ -22,6 +22,7 @@ SINCE=""
 UNTIL=""
 MAX_5XX_RATE=""
 MAX_P95_MS=""
+MAX_ERRORS=""
 MIN_SAMPLES=20
 FORMAT=text
 FOLLOW=0
@@ -41,6 +42,7 @@ Alerting (exit status 2 when a threshold is breached)
       --max-5xx-rate PCT   fail if more than PCT % of requests returned 5xx
       --max-p95-ms N       fail if any endpoint with enough samples has p95 above N ms
       --min-samples N      samples an endpoint needs for --max-p95-ms (default 20)
+      --max-errors N       fail if the application log has more than N ERROR lines
 
 Live
   -f, --follow             watch the files and print 5xx, slow requests and errors as they happen
@@ -65,6 +67,7 @@ while (($#)); do
     --max-5xx-rate) is_num "${2:-}" || die "--max-5xx-rate needs a percentage"; MAX_5XX_RATE=$2; shift 2 ;;
     --max-p95-ms) is_uint "${2:-}" || die "--max-p95-ms needs a number"; MAX_P95_MS=$2; shift 2 ;;
     --min-samples) is_uint "${2:-}" || die "--min-samples needs a number"; MIN_SAMPLES=$2; shift 2 ;;
+    --max-errors) is_uint "${2:-}" || die "--max-errors needs a number"; MAX_ERRORS=$2; shift 2 ;;
     --markdown) FORMAT=markdown; shift ;;
     -f | --follow) FOLLOW=1; shift ;;
     -h | --help) usage; exit 0 ;;
@@ -292,5 +295,9 @@ if [[ -n $MAX_P95_MS ]]; then
     echo "ALERT: $ep p95 ${p95} ms is above ${MAX_P95_MS} ms (${n} requests)" >&2
     BREACH=1
   done < <(awk -F'\t' -v m="$MAX_P95_MS" -v min="$MIN_SAMPLES" '$2 >= min && $5 > m' "$TMP/endpoints")
+fi
+if [[ -n $MAX_ERRORS ]] && (($(meta error) > MAX_ERRORS)); then
+  echo "ALERT: $(meta error) ERROR lines in the application log (limit ${MAX_ERRORS})" >&2
+  BREACH=1
 fi
 exit $((BREACH ? 2 : 0))

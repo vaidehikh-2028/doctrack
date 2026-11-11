@@ -255,7 +255,8 @@ ops/logscan.sh --follow logs/access.log logs/docreq.log   # live: 5xx, slow requ
 
 Endpoints are grouped by route (`REQ-2026-000123` becomes `{requestNumber}`), and p50/p95 are exact
 nearest-rank percentiles. CI runs it over the end-to-end and load-test traffic, publishes the report
-in the job summary, and fails the build on any 5xx. The script has its own test suite
+in the job summary, and fails the build on any 5xx or unexpected application ERROR. Its first run
+found one: client disconnects during the load test were being logged as `E-SYS-500` server errors. The script has its own test suite
 (`ops/test/logscan.test.sh`) and is checked with `shellcheck`.
 
 ## Frontend notes
