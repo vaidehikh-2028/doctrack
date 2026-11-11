@@ -10,3 +10,7 @@ data/
 node_modules/
 frontend/coverage/
 src/main/resources/static/
+
+# Runtime logs (Tomcat access log, application log)
+logs/
+!ops/test/fixtures/*.log

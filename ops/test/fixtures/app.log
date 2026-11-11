@@ -1,0 +1,12 @@
+2026-11-11T09:00:00.100Z  INFO 1 --- [docreq] [           main] com.lnmiit.docreq.DocReqApplication      : Started DocReqApplication in 4.2 seconds
+2026-11-11T09:00:05.001Z  WARN 1 --- [docreq] [nio-8080-exec-2] c.l.docreq.web.GlobalExceptionHandler    : E-AUTH-401 401 POST /api/auth/login user=anon Invalid credentials. Please check your details and try again.
+2026-11-11T09:00:06.001Z  WARN 1 --- [docreq] [nio-8080-exec-3] c.l.docreq.web.GlobalExceptionHandler    : E-REQ-001 400 POST /api/requests user=7 Please complete the highlighted fields.
+2026-11-11T09:00:07.001Z  WARN 1 --- [docreq] [nio-8080-exec-4] c.l.docreq.web.GlobalExceptionHandler    : E-VER-001 409 POST /api/staff/requests/REQ-2026-000001/verify user=3 The request is not in a state that allows this action.
+2026-11-11T09:00:07.501Z  WARN 1 --- [docreq] [   scheduling-1] c.l.d.n.NotificationDispatcher           : E-NTF-001 notification 4 failed (attempt 1): SMTP unavailable
+2026-11-11T09:00:08.001Z ERROR 1 --- [docreq] [nio-8080-exec-5] c.l.docreq.web.GlobalExceptionHandler    : E-SYS-500 500 GET /api/reports/summary user=1 persistence failure
+org.springframework.dao.DataAccessResourceFailureException: Unable to acquire JDBC Connection
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:277)
+Caused by: java.sql.SQLTransientConnectionException: HikariPool-1 - Connection is not available, request timed out after 30000ms.
+	at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:686)
+2026-11-11T09:00:09.001Z  WARN 1 --- [docreq] [nio-8080-exec-6] c.l.docreq.web.GlobalExceptionHandler    : E-AUTH-401 401 POST /api/auth/login user=anon Invalid credentials. Please check your details and try again.
+2026-11-11T10:30:00.001Z  WARN 1 --- [docreq] [nio-8080-exec-7] c.l.docreq.web.GlobalExceptionHandler    : E-REQ-004 404 GET /api/requests/REQ-2026-000999 user=7 Request not found.

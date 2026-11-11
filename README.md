@@ -237,6 +237,28 @@ frontend/src
 └── test/          end-to-end suite against the running API
 ```
 
+## Operations: log triage
+
+The app writes two logs to `logs/` (override with `LOG_DIR`): a Tomcat access log with one line
+per request and its latency, and the application log, where every handled API error is one line:
+`E-REQ-001 400 POST /api/requests user=7 Please complete the highlighted fields.`
+
+`ops/logscan.sh` turns them into a triage report using standard Unix tools (Bash, awk, sort):
+
+```bash
+ops/logscan.sh logs/access*.log logs/docreq.log           # error codes, slowest endpoints, status mix, exceptions
+ops/logscan.sh --since "2026-11-11 09:00" logs/*.log      # a time window
+docker logs doctrack 2>&1 | ops/logscan.sh -              # from stdin; .gz files also work
+ops/logscan.sh --max-5xx-rate 1 --max-p95-ms 500 logs/*.log  # exit 2 when a threshold is breached
+ops/logscan.sh --follow logs/access.log logs/docreq.log   # live: 5xx, slow requests and errors as they happen
+```
+
+Endpoints are grouped by route (`REQ-2026-000123` becomes `{requestNumber}`), and p50/p95 are exact
+nearest-rank percentiles. CI runs it over the end-to-end and load-test traffic, publishes the report
+in the job summary, and fails the build on any 5xx or unexpected application ERROR. Its first run
+found one: client disconnects during the load test were being logged as `E-SYS-500` server errors. The script has its own test suite
+(`ops/test/logscan.test.sh`) and is checked with `shellcheck`.
+
 ## Frontend notes
 
 - **Same origin, no CORS.** Vite builds into `src/main/resources/static`, so Spring serves the UI
