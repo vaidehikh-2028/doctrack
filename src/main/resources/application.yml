@@ -24,6 +24,26 @@ server:
   port: 8080
   error:
     include-message: never
+  tomcat:
+    # One line per HTTP request with its latency, for ops/logscan.sh:
+    #   2026-11-11 09:35:23.343 "GET /api/requests/mine HTTP/1.1" 200 512 12
+    # (timestamp, request line, status, bytes, milliseconds). No IPs, headers or bodies.
+    accesslog:
+      enabled: true
+      directory: ${LOG_DIR:${user.dir}/logs}
+      prefix: access
+      suffix: .log
+      pattern: '%{yyyy-MM-dd HH:mm:ss.SSS}t "%r" %s %b %{ms}T'
+      max-days: 7
+
+logging:
+  file:
+    # Application log on disk as well as stdout, so ops/logscan.sh can read it on the server.
+    name: ${LOG_DIR:${user.dir}/logs}/docreq.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
 
 management:
   endpoints:

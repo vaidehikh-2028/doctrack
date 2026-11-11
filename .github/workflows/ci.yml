@@ -27,6 +27,12 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      # ---- ops scripts ----
+      - name: Lint and test shell scripts
+        run: |
+          shellcheck ops/*.sh ops/test/*.sh
+          ops/test/logscan.test.sh
+
       # ---- backend ----
       - uses: actions/setup-java@v4
         with:
@@ -39,6 +45,7 @@ jobs:
       # ---- full stack: the React UI driving the real API ----
       - name: Start backend
         run: |
+          rm -rf logs   # drop logs written by the test suite; analyse only the traffic below
           java -jar target/docreq-*.jar --app.scheduling.enabled=false > backend.log 2>&1 &
           for i in $(seq 1 60); do curl -sf http://localhost:8080/actuator/health && break; sleep 2; done
       - name: End-to-end UI tests against the running backend
@@ -54,6 +61,12 @@ jobs:
         env:
           DOCTRACK_URL: http://localhost:8080
 
+      # ---- log triage over everything above; fails the build on any 5xx ----
+      - name: Log report
+        run: |
+          ops/logscan.sh logs/access*.log logs/docreq.log
+          ops/logscan.sh --markdown --max-5xx-rate 0 logs/access*.log logs/docreq.log >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload test and coverage reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,3 +77,4 @@ jobs:
             target/site/jacoco
             frontend/coverage
             backend.log
+            logs
