@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // stateless bearer tokens, no cookies
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/app.js", "/styles.css", "/favicon.svg",
+                        // React build output (frontend/ -> static/); hashed bundles live under /assets
+                        .requestMatchers("/", "/index.html", "/assets/**", "/favicon.svg",
                                 "/error", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

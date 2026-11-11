@@ -19,7 +19,7 @@ Built from the CS311/CS314 design documents (SRS, use cases, state diagrams, cla
 design and test plan): every status rule, error code and test case below traces back to them.
 
 **Stack:** Java 17 · Spring Boot 3.3 · Spring Security (JWT) · Spring Data JPA · PostgreSQL / H2 ·
-AWS S3 · JUnit 5 · MockMvc · Docker · GitHub Actions
+AWS S3 · React 18 · Vite · JUnit 5 · MockMvc · Vitest · Testing Library · Docker · GitHub Actions
 
 ---
 
@@ -60,7 +60,7 @@ stateDiagram-v2
 
 ```mermaid
 flowchart LR
-    UI[Web UI<br/>static SPA] -->|REST + JWT| WEB[web<br/>controllers, error mapping]
+    UI[React SPA<br/>Vite build, served by Spring] -->|REST + JWT| WEB[web<br/>controllers, error mapping]
     WEB --> SVC[service<br/>RequestService · VerificationService<br/>ApprovalService · AdminService]
     SVC --> DOM[domain + model<br/>state machine, validator, entities]
     SVC --> REPO[repository<br/>Spring Data JPA]
@@ -104,9 +104,13 @@ so it is unit-tested in isolation.
 Requirements: JDK 17+ and Maven 3.9+ (or open the folder in IntelliJ IDEA, which bundles Maven).
 
 ```bash
+cd frontend && npm ci && npm run build && cd ..   # builds the React UI into src/main/resources/static
 mvn spring-boot:run
 # open http://localhost:8080
 ```
+
+Working on the UI? Run the backend as above, then `cd frontend && npm run dev` and open
+http://localhost:5173: Vite hot-reloads the React app and proxies `/api` to port 8080.
 
 The default profile uses an H2 file database in `./data` and stores files in `./data/files`.
 Demo accounts are seeded on first start, all with password `Demo@1234`:
@@ -128,7 +132,16 @@ docker compose up --build
 
 ```bash
 mvn verify          # runs all tests and writes a coverage report to target/site/jacoco/index.html
+
+cd frontend
+npm test            # unit and component tests (Vitest + Testing Library)
+npm run test:e2e    # full-stack: the React UI driving a running backend (mvn spring-boot:run first)
 ```
+
+The end-to-end suite renders the real React app in jsdom against the live API and walks every role
+through the lifecycle: submit, verify, approve, process, upload and download; incomplete and
+resubmit; rejection with a mandatory reason; and a renamed `.exe` blocked before upload.
+CI runs it against the freshly built jar on every push.
 
 All 24 test cases from the Assignment 8 test plan are automated, plus extra cases for business rules
 the plan did not cover.
@@ -215,8 +228,28 @@ src/main/java/com/lnmiit/docreq
 ├── jobs/          scheduled jobs
 ├── web/           REST controllers, DTOs, error mapping
 └── config/        clock, scheduling, demo data
-src/main/resources/static   web UI (HTML/CSS/JS, no build step)
+
+frontend/src
+├── api/           fetch client (JWT, timeouts, error catalogue), XHR uploads with progress
+├── auth/          AuthProvider: token restore via /api/auth/me, sign-out at token expiry
+├── components/    status stepper, role-aware action panel, request forms
+├── pages/         one page per screen and role
+└── test/          end-to-end suite against the running API
 ```
+
+## Frontend notes
+
+- **Same origin, no CORS.** Vite builds into `src/main/resources/static`, so Spring serves the UI
+  and the API from one origin and one deployment.
+- **Role-aware UI over role-enforced API.** Each screen shows only the actions the backend's state
+  machine and `@PreAuthorize` rules allow, but the server remains the only authority.
+- **Concurrency surfaced, not hidden.** When a staff action loses an optimistic-lock race
+  (`E-SYS-409`) or someone else already acted (`E-VER-001`, `E-APR-001`), the UI reloads the request
+  and says so instead of showing a generic error.
+- **Live status without websockets.** Detail and queue pages poll while the tab is visible and pause
+  when it is hidden (Page Visibility API), which also avoids waking the free-tier server needlessly.
+- **Uploads checked twice.** The browser checks extension, size and magic bytes before uploading
+  (with an XHR progress bar); the server checks them again.
 
 ## Possible next steps
 

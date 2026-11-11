@@ -5,3 +5,8 @@ data/
 .vscode/
 .DS_Store
 *.log
+
+# Frontend: dependencies and the Vite build output (built in CI and in the Dockerfile)
+node_modules/
+frontend/coverage/
+src/main/resources/static/
