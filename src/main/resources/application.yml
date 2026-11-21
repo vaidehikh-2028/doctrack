@@ -14,6 +14,14 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+        # Load lazy associations and collections for up to 50 parents in one IN (...) query, not one each.
+        default_batch_fetch_size: 50
+  cache:
+    # See CacheConfig. spring.cache.type=none turns caching off.
+    type: caffeine
+    cache-names: principals,offeredTypes
+    caffeine:
+      spec: maximumSize=10000,expireAfterWrite=10m
   servlet:
     multipart:
       # Above the 5 MB business limit so the validator, not the servlet, gives the precise message.

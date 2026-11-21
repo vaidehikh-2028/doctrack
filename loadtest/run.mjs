@@ -4,8 +4,9 @@
 //   cd loadtest && npm ci && node run.mjs  # DOCTRACK_URL, CONNECTIONS, DURATION to override
 //
 // Writes a Markdown table to stdout and, in GitHub Actions, to the job summary.
+// RESULT_JSON=path also writes the numbers as JSON (used by compare.mjs in the benchmark workflow).
 import autocannon from 'autocannon';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 
 const BASE = (process.env.DOCTRACK_URL ?? 'http://localhost:8080').replace(/\/$/, '');
 const CONNECTIONS = Number(process.env.CONNECTIONS ?? 50);
@@ -22,13 +23,17 @@ async function login(username) {
   return (await res.json()).token;
 }
 
-/** Give the read endpoints realistic data: submit requests through the real multipart API. */
+/**
+ * Give the read endpoints realistic data: submit requests through the real multipart API, spread over
+ * every document type that needs no attachment, so list views show more than one type.
+ */
 async function seed(token) {
-  const types = await fetch(`${BASE}/api/document-types`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json());
-  const type = types.find((t) => !t.attachmentRequired);
-  if (!type) throw new Error('no document type without a required attachment');
+  const types = (await fetch(`${BASE}/api/document-types`, { headers: { Authorization: `Bearer ${token}` } }).then((r) => r.json()))
+    .filter((t) => !t.attachmentRequired);
+  if (!types.length) throw new Error('no document type without a required attachment');
   const numbers = [];
   for (let i = 0; i < SEED_REQUESTS; i++) {
+    const type = types[i % types.length];
     const form = new FormData();
     form.append('documentTypeId', String(type.id));
     form.append('purpose', `Load test request ${i + 1}`);
@@ -60,8 +65,10 @@ function run(title, opts) {
 }
 
 const student = await login('student1');
+const student2 = await login('student2');
 const staff = await login('staff1');
 const numbers = await seed(student);
+await seed(student2); // the staff queue then spans two students
 const auth = (t) => ({ Authorization: `Bearer ${t}` });
 
 // Warm up the JIT and connection pools so the measured runs reflect steady state.
@@ -77,11 +84,12 @@ results.push(
   }),
 );
 results.push(await run('GET /api/staff/requests (staff queue)', { url: `${BASE}/api/staff/requests`, headers: auth(staff) }));
+results.push(await run('GET /api/document-types (request form)', { url: `${BASE}/api/document-types`, headers: auth(student) }));
 
 const lines = [
-  `### DocTrack API load test`,
+  `### ${process.env.TITLE ?? 'DocTrack API load test'}`,
   ``,
-  `${CONNECTIONS} concurrent connections, ${DURATION}s per endpoint, ${SEED_REQUESTS} seeded requests, JWT-authenticated.`,
+  `${CONNECTIONS} concurrent connections, ${DURATION}s per endpoint, ${2 * SEED_REQUESTS} seeded requests from 2 students, JWT-authenticated.`,
   ``,
   `| Endpoint | Req/s | p50 ms | p90 ms | p99 ms | Requests | Errors |`,
   `|---|---:|---:|---:|---:|---:|---:|`,
@@ -90,6 +98,7 @@ const lines = [
 const out = lines.join('\n');
 console.log(out);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, out + '\n');
+if (process.env.RESULT_JSON) writeFileSync(process.env.RESULT_JSON, JSON.stringify(results, null, 2));
 
 if (results.some((r) => r.errorRate > 1)) {
   console.error('More than 1% of requests failed.');

@@ -1,5 +1,6 @@
 package com.lnmiit.docreq.service;
 
+import com.lnmiit.docreq.config.CacheConfig;
 import com.lnmiit.docreq.domain.DomainException;
 import com.lnmiit.docreq.domain.Enums.NotificationType;
 import com.lnmiit.docreq.domain.Enums.UserRole;
@@ -19,6 +20,7 @@ import com.lnmiit.docreq.security.AuthUser;
 import com.lnmiit.docreq.storage.FileStorage;
 import com.lnmiit.docreq.web.dto.Dtos;
 import com.lnmiit.docreq.web.dto.Views;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +59,8 @@ public class RequestService {
         this.clock = clock;
     }
 
+    /** Read on every form load and changed only by an admin, who evicts it (see CacheConfig). */
+    @Cacheable(cacheNames = CacheConfig.OFFERED_TYPES, key = "'all'")
     @Transactional(readOnly = true)
     public List<Dtos.DocumentTypeView> offeredTypes() {
         return types.findByActiveTrueOrderByNameAsc().stream().map(Views::type).toList();

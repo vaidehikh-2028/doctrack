@@ -1,5 +1,6 @@
 package com.lnmiit.docreq.service;
 
+import com.lnmiit.docreq.config.CacheConfig.CacheEvictor;
 import com.lnmiit.docreq.domain.DomainException;
 import com.lnmiit.docreq.domain.Enums.AccountStatus;
 import com.lnmiit.docreq.domain.ErrorCode;
@@ -35,13 +36,15 @@ public class AdminService {
     private final DocumentTypeRepository types;
     private final DocumentRequestRepository requests;
     private final PasswordEncoder encoder;
+    private final CacheEvictor evict;
 
     public AdminService(UserRepository users, DocumentTypeRepository types, DocumentRequestRepository requests,
-                        PasswordEncoder encoder) {
+                        PasswordEncoder encoder, CacheEvictor evict) {
         this.users = users;
         this.types = types;
         this.requests = requests;
         this.encoder = encoder;
+        this.evict = evict;
     }
 
     // ---------- users ----------
@@ -73,6 +76,7 @@ public class AdminService {
         if (cmd.contactInfo() != null) u.setContactInfo(cmd.contactInfo());
         if (cmd.role() != null) u.setRole(cmd.role());
         if (cmd.accountStatus() != null) u.setAccountStatus(cmd.accountStatus());
+        evict.principal(u.getId());   // role, name and status are in the cached principal
         audit.info("admin={} updated user={} role={} status={}", admin.username(), u.getUsername(), u.getRole(),
                 u.getAccountStatus());
         return Views.user(u);
@@ -95,6 +99,7 @@ public class AdminService {
                 cmd.attachmentRequired(), cmd.approvalRequired(), cmd.processingDays());
         if (cmd.active() != null) t.setActive(cmd.active());
         t = types.save(t);
+        evict.offeredTypes();
         audit.info("admin={} created documentType={}", admin.username(), t.getCode());
         return Views.type(t);
     }
@@ -114,6 +119,7 @@ public class AdminService {
         t.setApprovalRequired(cmd.approvalRequired());
         t.setProcessingDays(cmd.processingDays());
         if (cmd.active() != null) t.setActive(cmd.active());
+        evict.offeredTypes();
         audit.info("admin={} updated documentType={} active={}", admin.username(), t.getCode(), t.isActive());
         return Views.type(t);
     }
