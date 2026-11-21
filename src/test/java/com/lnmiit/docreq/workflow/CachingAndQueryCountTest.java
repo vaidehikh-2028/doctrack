@@ -51,7 +51,7 @@ class CachingAndQueryCountTest extends IntegrationTestBase {
         updateUser(id, "{\"role\":\"STAFF\"}");
 
         staffQueue("cache2").andExpect(status().isOk());
-        mine("cache2").andExpect(status().isOk());          // the token is unchanged; the role comes from the cache
+        mine("cache2").andExpect(status().isForbidden());   // same token, new role: student-only views are closed
     }
 
     // ---------- document types ----------
