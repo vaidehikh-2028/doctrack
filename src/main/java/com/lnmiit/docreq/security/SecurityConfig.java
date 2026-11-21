@@ -2,7 +2,6 @@ package com.lnmiit.docreq.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lnmiit.docreq.domain.ErrorCode;
-import com.lnmiit.docreq.repository.UserRepository;
 import com.lnmiit.docreq.web.dto.ApiError;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +34,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService, UserRepository users,
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService, PrincipalService principals,
                                            ObjectMapper mapper) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable) // stateless bearer tokens, no cookies
@@ -57,7 +56,7 @@ public class SecurityConfig {
                         })
                         .accessDeniedHandler((req, res, ex) ->
                                 write(res, mapper, ErrorCode.AUTH_ACCESS_DENIED, ErrorCode.AUTH_ACCESS_DENIED.defaultMessage())))
-                .addFilterBefore(new JwtAuthFilter(jwtService, users), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthFilter(jwtService, principals), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

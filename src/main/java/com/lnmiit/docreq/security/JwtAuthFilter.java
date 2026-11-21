@@ -1,7 +1,5 @@
 package com.lnmiit.docreq.security;
 
-import com.lnmiit.docreq.model.User;
-import com.lnmiit.docreq.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -15,12 +13,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Reads "Authorization: Bearer &lt;jwt&gt;", checks the user still exists and is ACTIVE,
  * and puts an {@link AuthUser} in the security context. Deactivated users lose access
- * immediately even if their token has not expired (FR-028).
+ * immediately even if their token has not expired (FR-028): the lookup is cached by
+ * {@link PrincipalService}, and deactivation evicts the cached entry.
  *
  * <p>Deliberately not a Spring bean: it is added only to the security filter chain,
  * so the servlet container does not register it a second time.
@@ -30,11 +28,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     static final String EXPIRED_ATTRIBUTE = "docreq.jwt.expired";
 
     private final JwtService jwtService;
-    private final UserRepository users;
+    private final PrincipalService principals;
 
-    public JwtAuthFilter(JwtService jwtService, UserRepository users) {
+    public JwtAuthFilter(JwtService jwtService, PrincipalService principals) {
         this.jwtService = jwtService;
-        this.users = users;
+        this.principals = principals;
     }
 
     @Override
@@ -45,11 +43,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             try {
                 Long userId = jwtService.parseUserId(token);
-                Optional<User> user = users.findById(userId).filter(User::isActive);
-                user.ifPresent(u -> {
-                    AuthUser principal = new AuthUser(u.getId(), u.getUsername(), u.getName(), u.getRole());
+                principals.activePrincipal(userId).ifPresent(principal -> {
                     var auth = new UsernamePasswordAuthenticationToken(principal, null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole().name())));
+                            List.of(new SimpleGrantedAuthority("ROLE_" + principal.role().name())));
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 });
             } catch (ExpiredJwtException e) {

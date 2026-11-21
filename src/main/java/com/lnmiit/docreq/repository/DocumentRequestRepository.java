@@ -3,6 +3,7 @@ package com.lnmiit.docreq.repository;
 import com.lnmiit.docreq.domain.RequestStatus;
 import com.lnmiit.docreq.model.DocumentRequest;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -26,11 +27,19 @@ public interface DocumentRequestRepository extends JpaRepository<DocumentRequest
     @Query("select r from DocumentRequest r where r.requestNumber = :requestNumber")
     Optional<DocumentRequest> findForUpdate(@Param("requestNumber") String requestNumber);
 
+    /*
+     * The list views show each request's student and document type. Fetching both in the same query
+     * avoids one extra query per distinct student and type (N+1); the types' required-field lists are
+     * then batch-loaded (hibernate.default_batch_fetch_size), so a list costs a fixed number of queries.
+     */
+    @EntityGraph(attributePaths = {"student", "documentType"})
     List<DocumentRequest> findByStudentIdOrderBySubmittedAtDesc(Long studentId);
 
     /** Work queues are first-come, first-served (Assignment 6, Section 43.8). */
+    @EntityGraph(attributePaths = {"student", "documentType"})
     List<DocumentRequest> findByStatusInOrderBySubmittedAtAsc(Collection<RequestStatus> statuses);
 
+    @EntityGraph(attributePaths = {"student", "documentType"})
     List<DocumentRequest> findAllByOrderBySubmittedAtDesc();
 
     @Query("select r from DocumentRequest r where r.status in :statuses "

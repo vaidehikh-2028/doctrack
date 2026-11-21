@@ -96,6 +96,15 @@ so it is unit-tested in isolation.
 - **No information leaks.** Login failures return one generic message (FR-002), and a password hash
   is checked even for unknown users so response time does not reveal valid user IDs. A request the user may not see returns 404, not 403, so its existence is not revealed.
 - **Document types are data, not code.** Admins add types and required fields without a deploy (NFR-012).
+- **Caching with exact invalidation.** Every authenticated request used to look up the user to check the
+  account is still active, and every form load re-read the document types. Both are now cached in-process
+  (Caffeine, `CacheConfig`). Admin changes evict the entry *after* their transaction commits, so a
+  deactivated user is refused on the very next request (FR-028) and a withdrawn type disappears at once.
+  The 10-minute TTL is only a backstop for running several instances. `spring.cache.type=none` turns it off.
+- **No N+1 queries in list views.** The staff queue and "my requests" fetch each request's student and
+  document type in the same query (`@EntityGraph`), and collections are batch-loaded, so a list costs the
+  same number of SQL statements however many students and types it shows (`CachingAndQueryCountTest`). The `Benchmark` workflow
+  builds a pull request's base and head and load-tests both on the same runner to measure such changes.
 - **Testable time.** Jobs take `Instant now` as a parameter and services use an injected `Clock`,
   so SLA and retry behaviour are tested deterministically.
 

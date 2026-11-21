@@ -4,6 +4,14 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    properties:
+      hibernate:
+        generate_statistics: true   # CachingAndQueryCountTest counts SQL statements
+
+logging:
+  level:
+    # generate_statistics also logs a metrics block per session; keep the test output readable
+    org.hibernate.engine.internal.StatisticalLoggingSessionEventListener: WARN
 
 app:
   storage:

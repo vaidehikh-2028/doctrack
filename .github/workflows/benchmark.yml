@@ -1,0 +1,63 @@
+name: Benchmark
+
+# Builds the pull request's base and head, runs the same load test against each on the same runner
+# (alternating, two rounds), and reports the difference in the job summary.
+on:
+  pull_request:
+    paths:
+      - 'src/main/**'
+      - 'pom.xml'
+      - 'loadtest/**'
+      - '.github/workflows/benchmark.yml'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Commit or branch to compare against'
+        default: 'origin/main~1'
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: loadtest/package-lock.json
+
+      - name: Build base and head
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || inputs.base }}
+        run: |
+          git worktree add "$RUNNER_TEMP/base-src" "$BASE_REF"
+          (cd "$RUNNER_TEMP/base-src" && mvn -B -q package -DskipTests)
+          mvn -B -q package -DskipTests
+          cp "$RUNNER_TEMP"/base-src/target/docreq-*.jar "$RUNNER_TEMP/base.jar"
+          cp target/docreq-*.jar "$RUNNER_TEMP/head.jar"
+
+      - name: Load test base and head
+        working-directory: loadtest
+        env:
+          DURATION: '15'
+        run: |
+          npm ci --no-audit --no-fund
+          bench() {   # bench <side> <round>: fresh database, start the jar, load test, stop
+            dir="$RUNNER_TEMP/run-$1-$2"
+            mkdir -p "$dir"
+            (cd "$dir" && exec java -jar "$RUNNER_TEMP/$1.jar" --app.scheduling.enabled=false > app.log 2>&1) &
+            pid=$!
+            for _ in $(seq 1 60); do curl -sf http://localhost:8080/actuator/health > /dev/null && break; sleep 2; done
+            GITHUB_STEP_SUMMARY='' TITLE="$1, round $2" RESULT_JSON="$RUNNER_TEMP/$1-$2.json" node run.mjs
+            kill "$pid"
+            wait "$pid" || true
+          }
+          bench base 1; bench head 1; bench base 2; bench head 2
+          node compare.mjs "$RUNNER_TEMP/base-1.json,$RUNNER_TEMP/base-2.json" "$RUNNER_TEMP/head-1.json,$RUNNER_TEMP/head-2.json"
